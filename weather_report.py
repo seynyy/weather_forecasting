@@ -2,14 +2,13 @@ import requests
 from bs4 import BeautifulSoup
 from openpyxl import Workbook
 
-import time
-
 wb = Workbook()
 ws = wb.active
 
-start_year = 00
+start_year = 0
 end_year = 22
 
+count = 21*28
 
 l = {
         0:'B',
@@ -48,17 +47,16 @@ m ={
         'NNW':337.5
 }
 
-
+        
 
 for i in range(0, 22):
     for j in range(1, 29):        
-        start = time.time()
         if i < 10:
-                r = requests.get("https://www.ogimet.com/cgi-bin/gsynres?lang=en&ind=12495&ndays=30&ano=200" + str(i)+"&mes=02&day="+ str(j)+"&hora=12&ord=REV&Send=Send","html.parser")
-                print("https://www.ogimet.com/cgi-bin/gsynres?lang=en&ind=12495&ndays=30&ano=200" + str(i)+"&mes=02&day="+ str(j)+"&hora=12&ord=REV&Send=Send")
-        else:
+                r = requests.get("https://www.ogimet.com/cgi-bin/gsynres?lang=en&ind=12495&ndays=30&ano=200" + str(i)+"&mes=02&day="+ str(j)+"&hora=12&ord=REV&Send=Send","html.parser")                    
+        if i >= 10:
                 r = requests.get("https://www.ogimet.com/cgi-bin/gsynres?lang=en&ind=12495&ndays=30&ano=20" + str(i)+"&mes=02&day="+ str(j)+"&hora=12&ord=REV&Send=Send","html.parser")
-                print("https://www.ogimet.com/cgi-bin/gsynres?lang=en&ind=12495&ndays=30&ano=20" + str(i)+"&mes=02&day="+ str(j)+"&hora=12&ord=REV&Send=Send")
+
+        print(str(round((i*27+j)/count*100, 2)) + "%")
 
         soup = BeautifulSoup(r.text,'html.parser')
 
@@ -68,26 +66,22 @@ for i in range(0, 22):
         a.insert(5, b)
 
         ws['A'+ str(j+3+(i-start_year)*30)] = j
-        
-        
 
         for k in range(15):
-                if a[k] is not None:                
+                if a[k] is not None and "504" not in r:              
                         if a[k].string in m:
                                 ws[l[k]+str(j+3+(i-start_year)*30)] = float(m[a[k].string])
                         elif a[k].string == '----' or a[k].string == '---':
                                 ws[l[k]+str(j+3+(i-start_year)*30)] = 'bd'
                         elif a[k].string == 'Tr':
                                 ws[l[k]+str(j+3+(i-start_year)*30)] = 'Tr'
-                        else:
+                        elif "504" not in r:
                                 ws[l[k]+str(j+3+(i-start_year)*30)] = float(a[k].string)
-                        #print(a[k].string)
-                else:
-                        print("Error: "+"https://www.ogimet.com/cgi-bin/gsynres?lang=en&ind=12495&ndays=30&ano=200" + str(i)+"&mes=02&day="+ str(j)+"&hora=12&ord=REV&Send=Send")
-                #ws[l[k] + str(j+3+(i-start_year)*31)] = '=AVERAGE(' + l[k] + str(j+3+(i-start_year)) + ':' + l[k] + str(j+3+(i-start_year)*30)
+                        else:
+                                for k in range(15):        
+                                        ws[l[k]+str(j+3+(i-start_year)*30)] = 'bd'
+                                continue
 
-        end = time.time()
-        print(end-start)
 wb.save('weather_report1.xlsx')
 
 
